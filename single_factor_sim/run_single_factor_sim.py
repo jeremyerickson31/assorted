@@ -37,48 +37,70 @@ loan_pds = [random.random() for i in range(0, num_loans)]  # make loan level def
 loan_lgds = [random.random() for i in range(0, num_loans)]  # make loan level loss given defaults
 loan_bals = [random.randrange(loan_bal_min, loan_bal_max, 1000) for i in range(0, num_loans)]  # make loan balances
 
-# ######### Vasicek Calculation #########
-# make DataFrame from above lists
-pool = pandas.DataFrame([loan_bals, loan_pds, loan_lgds], index=["Balance", "PD", "LGD"])
-pool = pool.transpose()  # index 1,2,3..., columns Balance, PD, LGD
-pool["Weight"] = pool["Balance"] / pool["Balance"].sum()  # Weight column is % of Balance for pool
 
-# take each percentile and evaluate Vasicek equation
-vas_loss_dist = list()
-for alpha in pctls:
-    # for each alpha in list of percentiles, calculate the loss % by using the Vasicek equation
-    pool["pct_" + str(alpha)] = pool["Weight"] * \
-                                pool["LGD"] * \
-                                norm((norm_inv(pool["PD"]) + (math.sqrt(corr) * norm_inv(alpha))) / math.sqrt(1.0 - corr))
-    vas_loss_dist.append(pool["pct_" + str(alpha)].sum())
+def get_vasicek_dist(pds, lgds, bals):
+    """
+    calculates the percentile of the loss distribution as given by the Vasicek equation
+    :param pds: list of default probabilities
+    :param lgds: list of loss given defaults
+    :param bals: list of loan balances
+    :return:
+    """
+    # make DataFrame from input lists
+    pool = pandas.DataFrame([bals, pds, lgds], index=["Balance", "PD", "LGD"])
+    pool = pool.transpose()  # index 1,2,3..., columns Balance, PD, LGD
+    pool["Weight"] = pool["Balance"] / pool["Balance"].sum()  # Weight column is % of Balance for pool
 
-# ######### Single Factor Asset Correlation Model Simulation #########
+    # take each percentile and evaluate Vasicek equation
+    vas_loss_dist = list()
+    for alpha in pctls:
+        # for each alpha in list of percentiles, calculate the loss % by using the Vasicek equation
+        pool["pct_" + str(alpha)] = pool["Weight"] * \
+                                    pool["LGD"] * \
+                                    norm((norm_inv(pool["PD"]) + (math.sqrt(corr) * norm_inv(alpha))) / math.sqrt(1.0 - corr))
+        vas_loss_dist.append(pool["pct_" + str(alpha)].sum())
 
-sim_run_loss_list = list()  # list to hold $ loss on portfolio for each simulation run
-for i in range(0, sim_runs):
-    print(i)  # simulation run count
+    return vas_loss_dist
 
-    sim_run_loss = 0.0  # outstanding balance loss for each sim run
-    Z_i = random.random()  # random draw on the systematic factor
 
-    for j in range(0, num_loans):
-        epsilon_ij = random.random()  # random draw on the idiosyncratic factor
-        R_ij = math.sqrt(corr) * Z_i + math.sqrt(1.0 - corr) * epsilon_ij  # calculate single factor asset return
+def brute_force_sim(pds, lgds, bals):
+    """
+    performs the asset correlation simulation with brute force double for-loop
+    :param pds: list of default probabilities
+    :param lgds: list of loss given defaults
+    :param bals: list of loan balances
+    :return:
+    """
+    # ######### Single Factor Asset Correlation Model Simulation #########
+    sim_run_loss_list = list()  # list to hold $ loss on portfolio for each simulation run
+    for i in range(0, sim_runs):
+        print(i)  # simulation run count
 
-        if R_ij < norm_inv(loan_pds[j]):  # if asset return is less than norm of loan pd
-            is_defaulted = True
-        else:
-            is_defaulted = False
+        sim_run_loss = 0.0  # outstanding balance loss for each sim run
+        Z_i = random.random()  # random draw on the systematic factor
 
-        if is_defaulted:
-            loss_amt = loan_lgds[j] * loan_bals[j]
-        else:
-            loss_amt = 0.0
+        for j in range(0, num_loans):
+            epsilon_ij = random.random()  # random draw on the idiosyncratic factor
+            R_ij = math.sqrt(corr) * Z_i + math.sqrt(1.0 - corr) * epsilon_ij  # calculate single factor asset return
 
-        sim_run_loss += loss_amt
+            if R_ij < norm_inv(pds[j]):  # if asset return is less than norm of loan pd
+                is_defaulted = True
+            else:
+                is_defaulted = False
 
-    sim_run_loss_list.append(sim_run_loss)
+            if is_defaulted:
+                loss_amt = lgds[j] * bals[j]
+            else:
+                loss_amt = 0.0
 
+            sim_run_loss += loss_amt
+
+        sim_run_loss_list.append(sim_run_loss)
+
+    return sim_run_loss_list
+
+
+sim_run_loss_list = brute_force_sim(loan_pds, loan_lgds, loan_bals)
 sim_loss_frame = pandas.DataFrame(sim_run_loss_list)
 sim_loss_frame.hist(bins=50, grid=True, xrot=90)
 pyplot.show()
