@@ -21,7 +21,7 @@ from matplotlib import pyplot
 # constants
 mu = 0.0  # for standard norm dist
 sigma = 1.0  # for standard norm dist
-corr = 0.25  # asset correlations to use for all loans in sim
+corr = 0.05  # asset correlations to use for all loans in sim
 pctls = numpy.linspace(0.001, 1.00, 999, False)  # list of percentiles for Vasicek calc
 num_loans = 100  # number of loans in the pretend pool
 sim_runs = 1000  # number of simulation runs to do
@@ -77,10 +77,10 @@ def brute_force_sim(pds, lgds, bals):
         print(i)  # simulation run count
 
         sim_run_loss = 0.0  # outstanding balance loss for each sim run
-        Z_i = random.random()  # random draw on the systematic factor
+        Z_i = norm_inv(random.random())  # random draw on the systematic factor
 
         for j in range(0, num_loans):
-            epsilon_ij = random.random()  # random draw on the idiosyncratic factor
+            epsilon_ij = norm_inv(random.random())  # random draw on the idiosyncratic factor
             R_ij = math.sqrt(corr) * Z_i + math.sqrt(1.0 - corr) * epsilon_ij  # calculate single factor asset return
 
             if R_ij < norm_inv(pds[j]):  # if asset return is less than norm of loan pd
