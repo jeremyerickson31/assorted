@@ -21,9 +21,9 @@ from matplotlib import pyplot
 # constants
 mu = 0.0  # for standard norm dist
 sigma = 1.0  # for standard norm dist
-corr = 0.05  # asset correlations to use for all loans in sim
+corr = 0.15  # asset correlations to use for all loans in sim
 pctls = numpy.linspace(0.001, 1.00, 999, False)  # list of percentiles for Vasicek calc
-num_loans = 100  # number of loans in the pretend pool
+num_loans = 1000  # number of loans in the pretend pool
 sim_runs = 1000  # number of simulation runs to do
 loan_bal_min = 10000  # minimum loan balance 10,000
 loan_bal_max = 10000000  # maximum loan balance 10,000,000
@@ -100,11 +100,38 @@ def brute_force_sim(pds, lgds, bals):
     return sim_run_loss_list
 
 
-sim_run_loss_list = brute_force_sim(loan_pds, loan_lgds, loan_bals)
-sim_loss_frame = pandas.DataFrame(sim_run_loss_list)
-sim_loss_frame.hist(bins=50, grid=True, xrot=90)
-pyplot.show()
+def matrix_calc_sim(pds, lgds, bals):
+    """
+    performs the asset correlation simulation with numpy matrix operations
+    :param pds: list of default probabilities
+    :param lgds: list of loss given defaults
+    :param bals: list of loan balances
+    :return:
+    """
 
+    z_vector = numpy.random.normal(loc=mu, scale=sigma, size=(1, sim_runs))  # vector of randoms for Z_i
+    z_vector = math.sqrt(corr) * z_vector
+    epsilon_matrix = numpy.random.normal(loc=mu, scale=sigma, size=(num_loans, sim_runs))  # matrix of randoms for e_ij
+    epsilon_matrix = math.sqrt(1.0 - corr) * epsilon_matrix
+    r_ij_matrix = z_vector + epsilon_matrix  # makes use of z_vector broadcasting to epsilon matrix size
+
+    pds_to_inv_norm = [norm_inv(pd) for pd in pds]
+    pds_vector = numpy.array(pds_to_inv_norm).reshape((num_loans, 1))  # makes a column vector of loan level PDs
+    loan_loss_vector = (numpy.array(lgds) * numpy.array(bals)).reshape((num_loans, 1))
+
+    is_defaulted_mask = r_ij_matrix < pds_vector
+    loan_loss_matrix = loan_loss_vector * is_defaulted_mask
+    sim_run_loss_list = list(loan_loss_matrix.sum(axis=0))  # sum down column is sum for all loans in sim run
+    return sim_run_loss_list
+
+
+if __name__ == "__main__":
+
+    sim_run_loss_list = matrix_calc_sim(loan_pds, loan_lgds, loan_bals)
+    #sim_run_loss_list = brute_force_sim(loan_pds, loan_lgds, loan_bals)
+    sim_loss_frame = pandas.DataFrame(sim_run_loss_list)
+    sim_loss_frame.hist(bins=50, grid=True, xrot=90)
+    pyplot.show()
 
 
 
