@@ -37,6 +37,8 @@ loan_pds = [random.random() for i in range(0, num_loans)]  # make loan level def
 loan_lgds = [random.random() for i in range(0, num_loans)]  # make loan level loss given defaults
 loan_bals = [random.randrange(loan_bal_min, loan_bal_max, 1000) for i in range(0, num_loans)]  # make loan balances
 
+# todo premake the Z and epsilon arrays for optional use in functions below -- to compare funcs on equal inputs
+
 
 def get_vasicek_dist(pds, lgds, bals):
     """
@@ -64,6 +66,7 @@ def get_vasicek_dist(pds, lgds, bals):
 
 
 def brute_force_sim(pds, lgds, bals):
+    # todo add params for z and epsilon default = None
     """
     performs the asset correlation simulation with brute force double for-loop
     :param pds: list of default probabilities
@@ -101,6 +104,7 @@ def brute_force_sim(pds, lgds, bals):
 
 
 def matrix_calc_sim(pds, lgds, bals):
+    # todo add params for z and epsilon default = None
     """
     performs the asset correlation simulation with numpy matrix operations
     :param pds: list of default probabilities
