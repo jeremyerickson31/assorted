@@ -35,7 +35,7 @@ norm_inv = scipy.stats.norm(mu, sigma).ppf  # inverse cumulative standard normal
 # generate a pool of loans that have random PDs, LGDs and Balances
 loan_pds = [random.random() for i in range(0, num_loans)]  # make loan level default probs
 loan_lgds = [random.random() for i in range(0, num_loans)]  # make loan level loss given defaults
-loan_bals = [random.randrange(loan_bal_min, loan_bal_max, 1000) for i in range(0, num_loans)]  # make loan balances
+loan_bals = [float(random.randrange(loan_bal_min, loan_bal_max, 1000)) for i in range(0, num_loans)]  # make loan balances
 
 # pre-make the random draws for Z and epsilon. these can be re-used to run calculation on exact same set of random draws
 z_vector_static = numpy.random.normal(loc=mu, scale=sigma, size=(1, sim_runs))  # vector of randoms for Z_i
@@ -134,19 +134,23 @@ def matrix_calc_sim(pds, lgds, bals, z_vec_in=None, epsilon_mat_in=None):
 
     pds_to_inv_norm = [norm_inv(pd) for pd in pds]  # run the pds through the norm inverse
     pds_vector = numpy.array(pds_to_inv_norm).reshape((num_loans, 1))  # makes a column vector of loan level PDs
-    loan_loss_vector = (numpy.array(lgds) * numpy.array(bals)).reshape((num_loans, 1))
+    lgds_array = numpy.array(lgds)
+    bals_array = numpy.array(bals)
+    loan_loss_vector = (lgds_array * bals_array).reshape((num_loans, 1))
 
     is_defaulted_mask = r_ij_matrix < pds_vector  # result is a matrix filled with True and False
     loan_loss_matrix = loan_loss_vector * is_defaulted_mask  # False * number = 0, True * number = number
     sim_run_loss_list = list(loan_loss_matrix.sum(axis=0))  # sum down column is sum for all loans in sim run
-    return sim_run_loss_list
+    sim_run_loss_pct_list = [dollar_loss / numpy.array(bals).sum() * 100 for dollar_loss in sim_run_loss_list]
+    return sim_run_loss_list, sim_run_loss_pct_list
 
 
 if __name__ == "__main__":
 
-    sim_run_loss_list = matrix_calc_sim(loan_pds, loan_lgds, loan_bals, z_vec_in=z_vector_static, epsilon_mat_in=epsilon_matrix_static)
+    sim_results = matrix_calc_sim(loan_pds, loan_lgds, loan_bals, z_vec_in=z_vector_static, epsilon_mat_in=epsilon_matrix_static)
+    sim_run_loss_list, sim_run_loss_pct_list = sim_results[0], sim_results[1]
     #sim_run_loss_list = brute_force_sim(loan_pds, loan_lgds, loan_bals)
-    sim_loss_frame = pandas.DataFrame(sim_run_loss_list)
+    sim_loss_frame = pandas.DataFrame(sim_run_loss_pct_list)
     sim_loss_frame.hist(bins=50, grid=True, xrot=90)
     pyplot.show()
 
