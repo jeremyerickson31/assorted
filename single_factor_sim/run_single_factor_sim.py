@@ -21,10 +21,10 @@ from matplotlib import pyplot
 # constants
 mu = 0.0  # for standard norm dist
 sigma = 1.0  # for standard norm dist
-corr = 0.15  # asset correlations to use for all loans in sim
+corr = 0.05  # asset correlations to use for all loans in sim
 pctls = numpy.linspace(0.001, 1.00, 999, False)  # list of percentiles for Vasicek calc
 num_loans = 1000  # number of loans in the pretend pool
-sim_runs = 1000  # number of simulation runs to do
+sim_runs = 10000  # number of simulation runs to do
 loan_bal_min = 10000  # minimum loan balance 10,000
 loan_bal_max = 10000000  # maximum loan balance 10,000,000
 
@@ -36,6 +36,10 @@ norm_inv = scipy.stats.norm(mu, sigma).ppf  # inverse cumulative standard normal
 loan_pds = [random.random() for i in range(0, num_loans)]  # make loan level default probs
 loan_lgds = [random.random() for i in range(0, num_loans)]  # make loan level loss given defaults
 loan_bals = [random.randrange(loan_bal_min, loan_bal_max, 1000) for i in range(0, num_loans)]  # make loan balances
+
+# pre-make the random draws for Z and epsilon. these can be re-used to run calculation on exact same set of random draws
+z_vector_static = numpy.random.normal(loc=mu, scale=sigma, size=(1, sim_runs))  # vector of randoms for Z_i
+epsilon_matrix_static = numpy.random.normal(loc=mu, scale=sigma, size=(num_loans, sim_runs))  # matrix of randoms for e_ij
 
 
 def get_vasicek_dist(pds, lgds, bals):
@@ -100,38 +104,50 @@ def brute_force_sim(pds, lgds, bals):
     return sim_run_loss_list
 
 
-def matrix_calc_sim(pds, lgds, bals):
+def matrix_calc_sim(pds, lgds, bals, z_vec_in=None, epsilon_mat_in=None):
     """
     performs the asset correlation simulation with numpy matrix operations
     :param pds: list of default probabilities
     :param lgds: list of loss given defaults
     :param bals: list of loan balances
+    :param z_vec_in: array of pre-drawn Z_i value for the sim, to run calc on exact same random variables
+    :param epsilon_mat_in: matrix of pre-drawn epsilon_ij values for the sim, to run calc on exact same random variables
     :return:
     """
 
-    z_vector = numpy.random.normal(loc=mu, scale=sigma, size=(1, sim_runs))  # vector of randoms for Z_i
-    z_vector = math.sqrt(corr) * z_vector
-    epsilon_matrix = numpy.random.normal(loc=mu, scale=sigma, size=(num_loans, sim_runs))  # matrix of randoms for e_ij
-    epsilon_matrix = math.sqrt(1.0 - corr) * epsilon_matrix
-    r_ij_matrix = z_vector + epsilon_matrix  # makes use of z_vector broadcasting to epsilon matrix size
+    if z_vec_in is None:
+        # make new set of randoms for Z_i
+        z_vector = numpy.random.normal(loc=mu, scale=sigma, size=(1, sim_runs))  # vector of randoms for Z_i
+    else:
+        # use the set of randoms you were given
+        z_vector = z_vec_in
 
-    pds_to_inv_norm = [norm_inv(pd) for pd in pds]
+    if epsilon_mat_in is None:
+        # make new set of randoms for epsilon_ij
+        epsilon_matrix = numpy.random.normal(loc=mu, scale=sigma, size=(num_loans, sim_runs))  # matrix of randoms for e_ij
+    else:
+        # use the set of randoms you were given
+        epsilon_matrix = epsilon_mat_in
+
+    # makes use of z_vector broadcasting to epsilon matrix size
+    r_ij_matrix = (math.sqrt(corr) * z_vector) + (math.sqrt(1.0 - corr) * epsilon_matrix)
+
+    pds_to_inv_norm = [norm_inv(pd) for pd in pds]  # run the pds through the norm inverse
     pds_vector = numpy.array(pds_to_inv_norm).reshape((num_loans, 1))  # makes a column vector of loan level PDs
     loan_loss_vector = (numpy.array(lgds) * numpy.array(bals)).reshape((num_loans, 1))
 
-    is_defaulted_mask = r_ij_matrix < pds_vector
-    loan_loss_matrix = loan_loss_vector * is_defaulted_mask
+    is_defaulted_mask = r_ij_matrix < pds_vector  # result is a matrix filled with True and False
+    loan_loss_matrix = loan_loss_vector * is_defaulted_mask  # False * number = 0, True * number = number
     sim_run_loss_list = list(loan_loss_matrix.sum(axis=0))  # sum down column is sum for all loans in sim run
     return sim_run_loss_list
 
 
 if __name__ == "__main__":
 
-    sim_run_loss_list = matrix_calc_sim(loan_pds, loan_lgds, loan_bals)
+    sim_run_loss_list = matrix_calc_sim(loan_pds, loan_lgds, loan_bals, z_vec_in=z_vector_static, epsilon_mat_in=epsilon_matrix_static)
     #sim_run_loss_list = brute_force_sim(loan_pds, loan_lgds, loan_bals)
     sim_loss_frame = pandas.DataFrame(sim_run_loss_list)
     sim_loss_frame.hist(bins=50, grid=True, xrot=90)
     pyplot.show()
-
 
 
