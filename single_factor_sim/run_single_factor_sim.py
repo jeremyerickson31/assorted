@@ -21,7 +21,6 @@ from matplotlib import pyplot
 # constants
 mu = 0.0  # for standard norm dist
 sigma = 1.0  # for standard norm dist
-corr = 0.05  # asset correlations to use for all loans in sim
 pctls = numpy.linspace(0.001, 1.00, 999, False)  # list of percentiles for Vasicek calc
 num_loans = 1000  # number of loans in the pretend pool
 sim_runs = 10000  # number of simulation runs to do
@@ -67,12 +66,13 @@ def get_vasicek_dist(pds, lgds, bals):
     return vas_loss_dist
 
 
-def brute_force_sim(pds, lgds, bals):
+def brute_force_sim(pds, lgds, bals, correlation):
     """
     performs the asset correlation simulation with brute force double for-loop
     :param pds: list of default probabilities
     :param lgds: list of loss given defaults
     :param bals: list of loan balances
+    :param correlation: value to use for asset correlation
     :return:
     """
     # ######### Single Factor Asset Correlation Model Simulation #########
@@ -85,7 +85,7 @@ def brute_force_sim(pds, lgds, bals):
 
         for j in range(0, num_loans):
             epsilon_ij = norm_inv(random.random())  # random draw on the idiosyncratic factor
-            R_ij = math.sqrt(corr) * Z_i + math.sqrt(1.0 - corr) * epsilon_ij  # calculate single factor asset return
+            R_ij = math.sqrt(correlation) * Z_i + math.sqrt(1.0 - correlation) * epsilon_ij  # calculate single factor asset return
 
             if R_ij < norm_inv(pds[j]):  # if asset return is less than norm of loan pd
                 is_defaulted = True
@@ -104,12 +104,13 @@ def brute_force_sim(pds, lgds, bals):
     return sim_run_loss_list
 
 
-def matrix_calc_sim(pds, lgds, bals, z_vec_in=None, epsilon_mat_in=None):
+def matrix_calc_sim(pds, lgds, bals, correlation, z_vec_in=None, epsilon_mat_in=None):
     """
     performs the asset correlation simulation with numpy matrix operations
     :param pds: list of default probabilities
     :param lgds: list of loss given defaults
     :param bals: list of loan balances
+    :param correlation: value to use for asset correlation
     :param z_vec_in: array of pre-drawn Z_i value for the sim, to run calc on exact same random variables
     :param epsilon_mat_in: matrix of pre-drawn epsilon_ij values for the sim, to run calc on exact same random variables
     :return:
@@ -130,7 +131,7 @@ def matrix_calc_sim(pds, lgds, bals, z_vec_in=None, epsilon_mat_in=None):
         epsilon_matrix = epsilon_mat_in
 
     # makes use of z_vector broadcasting to epsilon matrix size
-    r_ij_matrix = (math.sqrt(corr) * z_vector) + (math.sqrt(1.0 - corr) * epsilon_matrix)
+    r_ij_matrix = (math.sqrt(correlation) * z_vector) + (math.sqrt(1.0 - correlation) * epsilon_matrix)
 
     pds_to_inv_norm = [norm_inv(pd) for pd in pds]  # run the pds through the norm inverse
     pds_vector = numpy.array(pds_to_inv_norm).reshape((num_loans, 1))  # makes a column vector of loan level PDs
@@ -146,8 +147,8 @@ def matrix_calc_sim(pds, lgds, bals, z_vec_in=None, epsilon_mat_in=None):
 
 
 if __name__ == "__main__":
-
-    sim_results = matrix_calc_sim(loan_pds, loan_lgds, loan_bals, z_vec_in=z_vector_static, epsilon_mat_in=epsilon_matrix_static)
+    corr = 0.05  # asset correlations to use for all loans in sim
+    sim_results = matrix_calc_sim(loan_pds, loan_lgds, loan_bals, corr, z_vec_in=z_vector_static, epsilon_mat_in=epsilon_matrix_static)
     sim_run_loss_list, sim_run_loss_pct_list = sim_results[0], sim_results[1]
     #sim_run_loss_list = brute_force_sim(loan_pds, loan_lgds, loan_bals)
     sim_loss_frame = pandas.DataFrame(sim_run_loss_pct_list)
