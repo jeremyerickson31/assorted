@@ -18,28 +18,6 @@ import scipy.stats
 
 from matplotlib import pyplot
 
-# constants
-mu = 0.0  # for standard norm dist
-sigma = 1.0  # for standard norm dist
-pctls = numpy.linspace(0.001, 1.00, 999, False)  # list of percentiles for Vasicek calc
-num_loans = 1000  # number of loans in the pretend pool
-sim_runs = 10000  # number of simulation runs to do
-loan_bal_min = 10000  # minimum loan balance 10,000
-loan_bal_max = 10000000  # maximum loan balance 10,000,000
-
-# pre-make the standard normal functions
-norm = scipy.stats.norm(mu, sigma).cdf  # cumulative standard normal
-norm_inv = scipy.stats.norm(mu, sigma).ppf  # inverse cumulative standard normal
-
-# generate a pool of loans that have random PDs, LGDs and Balances
-loan_pds = [random.random() for i in range(0, num_loans)]  # make loan level default probs
-loan_lgds = [random.random() for i in range(0, num_loans)]  # make loan level loss given defaults
-loan_bals = [float(random.randrange(loan_bal_min, loan_bal_max, 1000)) for i in range(0, num_loans)]  # make loan balances
-
-# pre-make the random draws for Z and epsilon. these can be re-used to run calculation on exact same set of random draws
-z_vector_static = numpy.random.normal(loc=mu, scale=sigma, size=(1, sim_runs))  # vector of randoms for Z_i
-epsilon_matrix_static = numpy.random.normal(loc=mu, scale=sigma, size=(num_loans, sim_runs))  # matrix of randoms for e_ij
-
 
 def get_vasicek_dist(pds, lgds, bals):
     """
@@ -66,12 +44,13 @@ def get_vasicek_dist(pds, lgds, bals):
     return vas_loss_dist
 
 
-def brute_force_sim(pds, lgds, bals, correlation):
+def brute_force_sim(pds, lgds, bals, correlation, sim_runs):
     """
     performs the asset correlation simulation with brute force double for-loop
     :param pds: list of default probabilities
     :param lgds: list of loss given defaults
     :param bals: list of loan balances
+    :param sim_runs: number of simulation runs to do
     :param correlation: value to use for asset correlation
     :return:
     """
@@ -104,13 +83,14 @@ def brute_force_sim(pds, lgds, bals, correlation):
     return sim_run_loss_list
 
 
-def matrix_calc_sim(pds, lgds, bals, correlation, z_vec_in=None, epsilon_mat_in=None):
+def matrix_calc_sim(pds, lgds, bals, correlation, sim_runs, z_vec_in=None, epsilon_mat_in=None):
     """
     performs the asset correlation simulation with numpy matrix operations
     :param pds: list of default probabilities
     :param lgds: list of loss given defaults
     :param bals: list of loan balances
     :param correlation: value to use for asset correlation
+    :param sim_runs: number of simulation runs to do
     :param z_vec_in: array of pre-drawn Z_i value for the sim, to run calc on exact same random variables
     :param epsilon_mat_in: matrix of pre-drawn epsilon_ij values for the sim, to run calc on exact same random variables
     :return:
@@ -147,10 +127,39 @@ def matrix_calc_sim(pds, lgds, bals, correlation, z_vec_in=None, epsilon_mat_in=
 
 
 if __name__ == "__main__":
+
+    # constants
     corr = 0.05  # asset correlations to use for all loans in sim
-    sim_results = matrix_calc_sim(loan_pds, loan_lgds, loan_bals, corr, z_vec_in=z_vector_static, epsilon_mat_in=epsilon_matrix_static)
+    mu = 0.0  # for standard norm dist
+    sigma = 1.0  # for standard norm dist
+    pctls = numpy.linspace(0.001, 1.00, 999, False)  # list of percentiles for Vasicek calc
+    num_loans = 1000  # number of loans in the pretend pool
+    num_runs = 10000  # number of simulation runs to do
+    loan_bal_min = 10000  # minimum loan balance 10,000
+    loan_bal_max = 10000000  # maximum loan balance 10,000,000
+
+    # pre-make the standard normal functions, for Vasicek equation calc
+    norm = scipy.stats.norm(mu, sigma).cdf  # cumulative standard normal
+    norm_inv = scipy.stats.norm(mu, sigma).ppf  # inverse cumulative standard normal
+
+    # generate a pool of loans that have random PDs, LGDs and Balances
+    loan_pds = [random.random() for i in range(0, num_loans)]  # make loan level default probs
+    loan_lgds = [random.random() for i in range(0, num_loans)]  # make loan level loss given defaults
+    loan_bals = [float(random.randrange(loan_bal_min, loan_bal_max, 1000)) for i in
+                 range(0, num_loans)]  # make loan balances
+
+    # pre-make random draws for Z and epsilon. can be re-used to run calculation on exact same set of random draws
+    z_vector_static = numpy.random.normal(loc=mu, scale=sigma, size=(1, num_runs))  # vector of randoms for Z_i
+    epsilon_matrix_static = numpy.random.normal(loc=mu, scale=sigma,
+                                                size=(num_loans, num_runs))  # matrix of randoms for e_ij
+
+    # perform calculation using matrix multiplication
+    sim_results = matrix_calc_sim(pds=loan_pds, lgds=loan_lgds, bals=loan_bals,
+                                  correlation=corr, sim_runs=num_runs,
+                                  z_vec_in=z_vector_static,
+                                  epsilon_mat_in=epsilon_matrix_static)
     sim_run_loss_list, sim_run_loss_pct_list = sim_results[0], sim_results[1]
-    #sim_run_loss_list = brute_force_sim(loan_pds, loan_lgds, loan_bals)
+
     sim_loss_frame = pandas.DataFrame(sim_run_loss_pct_list)
     sim_loss_frame.hist(bins=50, grid=True, xrot=90)
     pyplot.show()
