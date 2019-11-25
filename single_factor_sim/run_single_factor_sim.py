@@ -129,12 +129,12 @@ def matrix_calc_sim(pds, lgds, bals, correlation, sim_runs, z_vec_in=None, epsil
 if __name__ == "__main__":
 
     # constants
-    corr = 0.05  # asset correlations to use for all loans in sim
+    corr_list = numpy.linspace(0.01, 0.25, 25)
     mu = 0.0  # for standard norm dist
     sigma = 1.0  # for standard norm dist
     pctls = numpy.linspace(0.001, 1.00, 999, False)  # list of percentiles for Vasicek calc
     num_loans = 1000  # number of loans in the pretend pool
-    num_runs = 10000  # number of simulation runs to do
+    num_runs = 1000 # number of simulation runs to do
     loan_bal_min = 10000  # minimum loan balance 10,000
     loan_bal_max = 10000000  # maximum loan balance 10,000,000
 
@@ -152,13 +152,31 @@ if __name__ == "__main__":
     epsilon_matrix_static = numpy.random.normal(loc=mu, scale=sigma, size=(num_loans, num_runs))  # randoms for e_ij
 
     # perform calculation using matrix multiplication
-    sim_results = matrix_calc_sim(pds=loan_pds, lgds=loan_lgds, bals=loan_bals, correlation=corr, sim_runs=num_runs,
-                                  z_vec_in=z_vector_static, epsilon_mat_in=epsilon_matrix_static)
+    sim_results_dict = dict()
+    for correlation in corr_list:
+        correlation = round(correlation, 2)
+        print("Running Calculation for correlation = " + str(correlation))
+        sim_results = matrix_calc_sim(pds=loan_pds, lgds=loan_lgds, bals=loan_bals,
+                                      correlation=correlation, sim_runs=num_runs,
+                                      z_vec_in=z_vector_static, epsilon_mat_in=epsilon_matrix_static)
 
-    sim_run_loss_list, sim_run_loss_pct_list = sim_results[0], sim_results[1]
+        sim_run_loss_list, sim_run_loss_pct_list = sim_results[0], sim_results[1]
+        sim_results_dict[str(correlation)] = {'dollar': sim_run_loss_list, 'percent': sim_run_loss_pct_list}
 
-    sim_loss_frame = pandas.DataFrame(sim_run_loss_pct_list)
-    sim_loss_frame.hist(bins=50, grid=True, xrot=90)
+    # PLOTTING
+    # make histogram for corr=0.05, corr=0.15, and corr=0.25
+    correlation_graphs = ['0.05', '0.1', '0.15', '0.25']
+    fig1 = pyplot.figure()
+    ax1 = fig1.add_subplot(111)
+    for entry in correlation_graphs:
+        hist, bins = numpy.histogram(sim_results_dict[entry]['percent'], bins=50, density=True)
+        ax1.plot(bins[0:-1], hist)
+    ax1.grid()
+    ax1.set_xlabel('Loss (% of Balance)')
+    ax1.set_ylabel('% of Simulation Runs with Loss X')
+    ax1.legend(["0.5", "0.10", "0.15", "0.25"])
     pyplot.show()
+
+    #print(numpy.percentile(numpy.array(sim_run_loss_pct_list), 99.99))
 
 
