@@ -143,21 +143,18 @@ if __name__ == "__main__":
     norm_inv = scipy.stats.norm(mu, sigma).ppf  # inverse cumulative standard normal
 
     # generate a pool of loans that have random PDs, LGDs and Balances
-    loan_pds = [random.random() for i in range(0, num_loans)]  # make loan level default probs
-    loan_lgds = [random.random() for i in range(0, num_loans)]  # make loan level loss given defaults
-    loan_bals = [float(random.randrange(loan_bal_min, loan_bal_max, 1000)) for i in
-                 range(0, num_loans)]  # make loan balances
+    loan_pds = [random.random() for i in range(0, num_loans)]  # loan level default probs
+    loan_lgds = [random.random() for i in range(0, num_loans)]  # loan level loss given defaults
+    loan_bals = [float(random.randrange(loan_bal_min, loan_bal_max, 1000)) for i in range(0, num_loans)]  # balances
 
     # pre-make random draws for Z and epsilon. can be re-used to run calculation on exact same set of random draws
     z_vector_static = numpy.random.normal(loc=mu, scale=sigma, size=(1, num_runs))  # vector of randoms for Z_i
-    epsilon_matrix_static = numpy.random.normal(loc=mu, scale=sigma,
-                                                size=(num_loans, num_runs))  # matrix of randoms for e_ij
+    epsilon_matrix_static = numpy.random.normal(loc=mu, scale=sigma, size=(num_loans, num_runs))  # randoms for e_ij
 
     # perform calculation using matrix multiplication
-    sim_results = matrix_calc_sim(pds=loan_pds, lgds=loan_lgds, bals=loan_bals,
-                                  correlation=corr, sim_runs=num_runs,
-                                  z_vec_in=z_vector_static,
-                                  epsilon_mat_in=epsilon_matrix_static)
+    sim_results = matrix_calc_sim(pds=loan_pds, lgds=loan_lgds, bals=loan_bals, correlation=corr, sim_runs=num_runs,
+                                  z_vec_in=z_vector_static, epsilon_mat_in=epsilon_matrix_static)
+
     sim_run_loss_list, sim_run_loss_pct_list = sim_results[0], sim_results[1]
 
     sim_loss_frame = pandas.DataFrame(sim_run_loss_pct_list)
