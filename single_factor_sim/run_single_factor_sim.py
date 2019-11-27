@@ -105,7 +105,7 @@ def matrix_calc_sim(pds, lgds, bals, correlation, sim_runs, z_vec_in=None, epsil
 
     if epsilon_mat_in is None:
         # make new set of randoms for epsilon_ij
-        epsilon_matrix = numpy.random.normal(loc=mu, scale=sigma, size=(num_loans, sim_runs))  # matrix of randoms for e_ij
+        epsilon_matrix = numpy.random.normal(loc=mu, scale=sigma, size=(num_loans, sim_runs))  # randoms for e_ij
     else:
         # use the set of randoms you were given
         epsilon_matrix = epsilon_mat_in
@@ -152,7 +152,6 @@ if __name__ == "__main__":
     z_vector_static = numpy.random.normal(loc=mu, scale=sigma, size=(1, num_runs))  # vector of randoms for Z_i
     epsilon_matrix_static = numpy.random.normal(loc=mu, scale=sigma, size=(num_loans, num_runs))  # randoms for e_ij
 
-
     # make data container for percentiles of distribution for each correlation run
     pctl_graph_data = dict()
     for percentile in pctls_graph_series:
@@ -191,13 +190,13 @@ if __name__ == "__main__":
     ax2 = fig2.add_subplot(111)
     for percentile in pctls_graph_series:
         ax2.plot(corr_list, pctl_graph_data[percentile])
-
     ax2.grid()
     ax2.set_xlabel('Correlation')
     ax2.set_ylabel('Loss (% of Balance) at Percentile')
     ax2.legend(pctls_graph_series)
 
-    pyplot.show()
+    fig1.savefig("Portfolio Loss Distribution.png")
+    fig2.savefig("Distribution Percentile Curves")
 
 
 
