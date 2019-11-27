@@ -184,7 +184,7 @@ if __name__ == "__main__":
     ax1.grid()
     ax1.set_xlabel('Loss (% of Balance)')
     ax1.set_ylabel('% of Simulation Runs with Loss X')
-    ax1.legend(["0.5", "0.10", "0.15", "0.25"])
+    ax1.legend(correlation_graphs)
 
     fig2 = pyplot.figure()
     ax2 = fig2.add_subplot(111)
