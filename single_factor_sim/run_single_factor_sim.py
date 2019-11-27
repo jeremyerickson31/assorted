@@ -19,7 +19,7 @@ import scipy.stats
 from matplotlib import pyplot
 
 
-def get_vasicek_dist(pds, lgds, bals):
+def get_vasicek_dist(pds, lgds, bals, corr):
     """
     calculates the percentile of the loss distribution as given by the Vasicek equation
     :param pds: list of default probabilities
@@ -129,12 +129,13 @@ def matrix_calc_sim(pds, lgds, bals, correlation, sim_runs, z_vec_in=None, epsil
 if __name__ == "__main__":
 
     # constants
-    corr_list = numpy.linspace(0.01, 0.25, 25)
+    corr_list = numpy.linspace(0.01, 0.50, 50)
     mu = 0.0  # for standard norm dist
     sigma = 1.0  # for standard norm dist
     pctls = numpy.linspace(0.001, 1.00, 999, False)  # list of percentiles for Vasicek calc
+    pctls_graph_series = ['50', '75', '90', '95', '99', '99.9']
     num_loans = 1000  # number of loans in the pretend pool
-    num_runs = 1000 # number of simulation runs to do
+    num_runs = 100000  # number of simulation runs to do
     loan_bal_min = 10000  # minimum loan balance 10,000
     loan_bal_max = 10000000  # maximum loan balance 10,000,000
 
@@ -151,6 +152,12 @@ if __name__ == "__main__":
     z_vector_static = numpy.random.normal(loc=mu, scale=sigma, size=(1, num_runs))  # vector of randoms for Z_i
     epsilon_matrix_static = numpy.random.normal(loc=mu, scale=sigma, size=(num_loans, num_runs))  # randoms for e_ij
 
+
+    # make data container for percentiles of distribution for each correlation run
+    pctl_graph_data = dict()
+    for percentile in pctls_graph_series:
+        pctl_graph_data[percentile] = list()
+
     # perform calculation using matrix multiplication
     sim_results_dict = dict()
     for correlation in corr_list:
@@ -162,6 +169,10 @@ if __name__ == "__main__":
 
         sim_run_loss_list, sim_run_loss_pct_list = sim_results[0], sim_results[1]
         sim_results_dict[str(correlation)] = {'dollar': sim_run_loss_list, 'percent': sim_run_loss_pct_list}
+
+        # for each correlation run, the values of the distribution for a fixed set of percentiles
+        for percentile in pctls_graph_series:
+            pctl_graph_data[percentile].append(numpy.percentile(numpy.array(sim_run_loss_pct_list), float(percentile)))
 
     # PLOTTING
     # make histogram for corr=0.05, corr=0.15, and corr=0.25
@@ -175,8 +186,18 @@ if __name__ == "__main__":
     ax1.set_xlabel('Loss (% of Balance)')
     ax1.set_ylabel('% of Simulation Runs with Loss X')
     ax1.legend(["0.5", "0.10", "0.15", "0.25"])
+
+    fig2 = pyplot.figure()
+    ax2 = fig2.add_subplot(111)
+    for percentile in pctls_graph_series:
+        ax2.plot(corr_list, pctl_graph_data[percentile])
+
+    ax2.grid()
+    ax2.set_xlabel('Correlation')
+    ax2.set_ylabel('Loss (% of Balance) at Percentile')
+    ax2.legend(pctls_graph_series)
+
     pyplot.show()
 
-    #print(numpy.percentile(numpy.array(sim_run_loss_pct_list), 99.99))
 
 
