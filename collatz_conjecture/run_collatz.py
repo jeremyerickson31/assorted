@@ -64,7 +64,7 @@ if __name__ == "__main__":
         # ##################
         # make a list of numbers to run and store the results
         # ##################
-        start_num_list = list(range(2, 1000000))
+        start_num_list = list(range(2, 100))
         results = dict()
         for num in start_num_list:
             # series = collatz_whileloop(num)
@@ -83,20 +83,15 @@ if __name__ == "__main__":
         series = json.load(f)
         f.close()
 
-        series_lengths = [len(series[key].split(",")) for key in series.keys()]
-        fig1 = pyplot.figure()
-        ax1 = fig1.add_subplot(111)
-        ax1.plot(series_lengths[0:1000])
-        ax1.grid()
-
-        data_series = list(range(10, 30))
-        fig2 = pyplot.figure()
-        ax2 = fig2.add_subplot(111)
+        data_series = list(range(97, 98))
+        pyplot.subplot(1, 1, 1)
         for data_index in data_series:
             data = series[str(data_index)].split(",")
             data = [int(x) for x in data]
-            ax2.plot(data)
-        ax2.grid()
+            pyplot.plot(data)
+        pyplot.grid()
+        pyplot.xlabel("Iteration")
+        pyplot.ylabel("Value After Iteration")
         pyplot.show()
 
 
