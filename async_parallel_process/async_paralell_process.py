@@ -31,19 +31,22 @@ def take_average(row):
     return average
 
 
-#  Run by brute force method of looping over every cell in matrix one at a time
-brute_force_avgs = list()
-brute_force_start = datetime.now()
-for row in rands:
-    output = take_average(row)
-    brute_force_avgs.append(output)
-brute_strength_end = datetime.now()
+def main():
 
-print("-------------------")
-print("------RESULTS------")
-print("-------------------")
-print("Method: Brute Force")
-print("Start: " + str(brute_force_start))
-print("End: " + str(brute_strength_end))
-print("Duration: " + str(brute_strength_end - brute_force_start) + " (hrs:mins:sec.msec)")
-print("-------------------")
+    #  Run by brute force method of looping over every cell in matrix one at a time
+    brute_force_avgs = list()
+    brute_force_start = datetime.now()
+    for row in rands:
+        output = take_average(row)
+        brute_force_avgs.append(output)
+    brute_strength_end = datetime.now()
+
+    print("-------------------")
+    print("------RESULTS------")
+    print("-------------------")
+    print("Brute Force Duration" + str(brute_strength_end - brute_force_start) + " (hrs:mins:sec.msec)")
+    print("-------------------")
+
+
+if __name__ == "__main__":
+    main()
