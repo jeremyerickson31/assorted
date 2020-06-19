@@ -5,14 +5,8 @@
 
 
 import numpy
+import multiprocessing
 from datetime import datetime
-
-# make variables from random numbers
-mean = 0.0  # standard normal mean
-std_dev = 1.0  # standard normal standard deviation
-num_rows = 1000  # number of rows; each row represents 1 standard normal variable
-sim_runs = 1000  # number of columns to have; each column is a simulation run with a random draw
-rands = numpy.random.normal(mean, std_dev, size=(num_rows, sim_runs))
 
 
 def take_average(row):
@@ -32,6 +26,12 @@ def take_average(row):
 
 
 def main():
+    # make variables from random numbers
+    mean = 0.0  # standard normal mean
+    std_dev = 1.0  # standard normal standard deviation
+    num_rows = 100000  # number of rows; each row represents 1 standard normal variable
+    sim_runs = 5000  # number of columns to have; each column is a simulation run with a random draw
+    rands = numpy.random.normal(mean, std_dev, size=(num_rows, sim_runs))
 
     #  Run by brute force method of looping over every cell in matrix one at a time
     brute_force_avgs = list()
@@ -41,10 +41,18 @@ def main():
         brute_force_avgs.append(output)
     brute_strength_end = datetime.now()
 
+    # run by parallel processing
+    parallel_start = datetime.now()
+    proc_pool = multiprocessing.Pool(multiprocessing.cpu_count())
+    results = [proc_pool.apply_async(take_average, args=(row)) for row in rands]
+    proc_pool.close()
+    parallel_end = datetime.now()
+
     print("-------------------")
     print("------RESULTS------")
     print("-------------------")
-    print("Brute Force Duration" + str(brute_strength_end - brute_force_start) + " (hrs:mins:sec.msec)")
+    print("Brute Force Duration " + str(brute_strength_end - brute_force_start) + " (hrs:mins:sec.msec)")
+    print("Parallel Duration " + str(parallel_end - parallel_start) + " (hrs:mins:sec.msec)")
     print("-------------------")
 
 
