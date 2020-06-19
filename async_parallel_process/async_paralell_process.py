@@ -25,27 +25,40 @@ def take_average(row):
     return average
 
 
+def run_brute_force(array):
+    brute_force_avgs = list()
+    for row in array:
+        output = take_average(row)
+        brute_force_avgs.append(output)
+    return brute_force_avgs
+
+
+def run_parallel(array):
+    proc_pool = multiprocessing.Pool(multiprocessing.cpu_count())
+    output = [proc_pool.apply_async(take_average, args=(row,)) for row in array]
+    parallel_avgs = [result.get() for result in output]
+    proc_pool.close()
+    return parallel_avgs
+
+
 def main():
     # make variables from random numbers
     mean = 0.0  # standard normal mean
     std_dev = 1.0  # standard normal standard deviation
-    num_rows = 100000  # number of rows; each row represents 1 standard normal variable
+    num_rows = 5000  # number of rows; each row represents 1 standard normal variable
     sim_runs = 5000  # number of columns to have; each column is a simulation run with a random draw
     rands = numpy.random.normal(mean, std_dev, size=(num_rows, sim_runs))
 
+    rands_slice = rands
+
     #  Run by brute force method of looping over every cell in matrix one at a time
-    brute_force_avgs = list()
     brute_force_start = datetime.now()
-    for row in rands:
-        output = take_average(row)
-        brute_force_avgs.append(output)
+    brute_force_avgs = run_brute_force(rands_slice)
     brute_strength_end = datetime.now()
 
     # run by parallel processing
     parallel_start = datetime.now()
-    proc_pool = multiprocessing.Pool(multiprocessing.cpu_count())
-    results = [proc_pool.apply_async(take_average, args=(row)) for row in rands]
-    proc_pool.close()
+    parallell_avgs = run_parallel(rands_slice)
     parallel_end = datetime.now()
 
     print("-------------------")
@@ -54,6 +67,7 @@ def main():
     print("Brute Force Duration " + str(brute_strength_end - brute_force_start) + " (hrs:mins:sec.msec)")
     print("Parallel Duration " + str(parallel_end - parallel_start) + " (hrs:mins:sec.msec)")
     print("-------------------")
+
 
 
 if __name__ == "__main__":
