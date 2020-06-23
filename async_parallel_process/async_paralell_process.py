@@ -27,47 +27,69 @@ def take_average(row):
 
 def run_brute_force(array):
     brute_force_avgs = list()
+    brute_force_start = datetime.now()
     for row in array:
         output = take_average(row)
         brute_force_avgs.append(output)
-    return brute_force_avgs
+    brute_force_end = datetime.now()
+    brute_force_runtime = brute_force_end - brute_force_start
+    return brute_force_avgs, brute_force_runtime
 
 
 def run_parallel(array):
-    proc_pool = multiprocessing.Pool(multiprocessing.cpu_count())
+    parallel_start = datetime.now()
+    proc_pool = multiprocessing.Pool(6)
     output = [proc_pool.apply_async(take_average, args=(row,)) for row in array]
     parallel_avgs = [result.get() for result in output]
     proc_pool.close()
-    return parallel_avgs
+    parallel_end = datetime.now()
+    parallel_runtime = parallel_end - parallel_start
+    return parallel_avgs, parallel_runtime
 
 
 def main():
     # make variables from random numbers
     mean = 0.0  # standard normal mean
     std_dev = 1.0  # standard normal standard deviation
-    num_rows = 5000  # number of rows; each row represents 1 standard normal variable
-    sim_runs = 5000  # number of columns to have; each column is a simulation run with a random draw
+    min_num = 1000
+    max_num = 2500
+    num_rows = max_num  # number of rows; each row represents 1 standard normal variable
+    sim_runs = max_num  # number of columns to have; each column is a simulation run with a random draw
     rands = numpy.random.normal(mean, std_dev, size=(num_rows, sim_runs))
 
-    rands_slice = rands
+    increments = list(range(min_num, max_num, 500))
+    results = {"rows": {"brute": [], "parallel": []},
+               "columns": {"brute": [], "parallel": []}
+               }
 
-    #  Run by brute force method of looping over every cell in matrix one at a time
-    brute_force_start = datetime.now()
-    brute_force_avgs = run_brute_force(rands_slice)
-    brute_strength_end = datetime.now()
+    for row_slice in increments:
+        # run loop with rows increasing and columns held constant
+        print("Running with rows up to " + str(row_slice) + " and all columns")
+        rands_slice = rands[0:row_slice + 1, :]
+        brute_force_avgs, brute_force_time = run_brute_force(rands)
+        parallel_avgs, parallel_time = run_parallel(rands_slice)
+        results["rows"]["brute"].append(brute_force_time.total_seconds())
+        results["rows"]["parallel"].append(parallel_time.total_seconds())
 
-    # run by parallel processing
-    parallel_start = datetime.now()
-    parallell_avgs = run_parallel(rands_slice)
-    parallel_end = datetime.now()
+    for col_slice in increments:
+        # run loop with rows held constant and columns increasing
+        print("Running with columns up to " + str(col_slice) + " and all rows")
+        rands_slice = rands[:, 0:col_slice + 1]
+        brute_force_avgs, brute_force_time = run_brute_force(rands)
+        parallel_avgs, parallel_time = run_parallel(rands_slice)
+        results["columns"]["brute"].append(brute_force_time.total_seconds())
+        results["columns"]["parallel"].append(parallel_time.total_seconds())
 
+    print(results)
+
+"""
     print("-------------------")
     print("------RESULTS------")
     print("-------------------")
-    print("Brute Force Duration " + str(brute_strength_end - brute_force_start) + " (hrs:mins:sec.msec)")
-    print("Parallel Duration " + str(parallel_end - parallel_start) + " (hrs:mins:sec.msec)")
+    print("Brute Force Duration " + str(brute_force_time) + " (hrs:mins:sec.msec)")
+    print("Parallel Duration " + str(parallel_time) + " (hrs:mins:sec.msec)")
     print("-------------------")
-
+"""
 
 
 if __name__ == "__main__":
