@@ -7,6 +7,7 @@
 import numpy
 import multiprocessing
 from datetime import datetime
+from matplotlib import pyplot
 
 
 def take_average(row):
@@ -70,6 +71,7 @@ def main():
         # run loop with rows increasing and columns held constant
         print("Running with rows up to " + str(row_slice) + " and all columns")
         rands_slice = rands[0:row_slice + 1, :]
+        print(rands_slice.shape)
         brute_force_avgs, brute_force_time = run_brute_force(rands)
         parallel_avgs, parallel_time = run_parallel(rands_slice)
         results["rows"]["brute"].append(brute_force_time.total_seconds())
@@ -79,12 +81,25 @@ def main():
         # run loop with rows held constant and columns increasing
         print("Running with columns up to " + str(col_slice) + " and all rows")
         rands_slice = rands[:, 0:col_slice + 1]
+        print(rands_slice.shape)
         brute_force_avgs, brute_force_time = run_brute_force(rands)
         parallel_avgs, parallel_time = run_parallel(rands_slice)
         results["columns"]["brute"].append(brute_force_time.total_seconds())
         results["columns"]["parallel"].append(parallel_time.total_seconds())
 
     print(results)
+
+    # plotting
+    pyplot.subplot(1, 1, 1)
+    pyplot.plot(increments, results["rows"]["brute"])
+    pyplot.plot(increments, results["rows"]["parallel"])
+    pyplot.plot(increments, results["columns"]["brute"])
+    pyplot.plot(increments, results["columns"]["parallel"])
+    pyplot.grid()
+    pyplot.xlabel("Num of Rows/Columns")
+    pyplot.ylabel("Runtime(s)")
+    pyplot.legend(["more-rows-brute", "more-rows-parallel", "more-cols-brute", "more-cols-parallel"])
+    pyplot.show()
 
 """
     print("-------------------")
