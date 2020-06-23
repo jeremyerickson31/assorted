@@ -12,7 +12,7 @@ from datetime import datetime
 def take_average(row):
     """
     this function will simply average the values in each row
-    it is used to demostrate a function that performs a calculation and requires CPU usage
+    it is used to demonstrate a function that performs a calculation and requires CPU usage
     :param row: a row of values
     :return: the average of the values
     """
@@ -26,6 +26,7 @@ def take_average(row):
 
 
 def run_brute_force(array):
+    # function to loop through rows of array and apply take_average() to entries in the row
     brute_force_avgs = list()
     brute_force_start = datetime.now()
     for row in array:
@@ -33,10 +34,12 @@ def run_brute_force(array):
         brute_force_avgs.append(output)
     brute_force_end = datetime.now()
     brute_force_runtime = brute_force_end - brute_force_start
+
     return brute_force_avgs, brute_force_runtime
 
 
 def run_parallel(array):
+    # function to apply take_average() to each row of an array using parallel processing
     parallel_start = datetime.now()
     proc_pool = multiprocessing.Pool(6)
     output = [proc_pool.apply_async(take_average, args=(row,)) for row in array]
@@ -44,6 +47,7 @@ def run_parallel(array):
     proc_pool.close()
     parallel_end = datetime.now()
     parallel_runtime = parallel_end - parallel_start
+
     return parallel_avgs, parallel_runtime
 
 
