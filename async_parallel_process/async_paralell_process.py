@@ -56,13 +56,13 @@ def main():
     # make variables from random numbers
     mean = 0.0  # standard normal mean
     std_dev = 1.0  # standard normal standard deviation
-    min_num = 1000
-    max_num = 5000
+    min_num = 100
+    max_num = 6000
     num_rows = max_num  # number of rows; each row represents 1 standard normal variable
     sim_runs = max_num  # number of columns to have; each column is a simulation run with a random draw
     rands = numpy.random.normal(mean, std_dev, size=(num_rows, sim_runs))
 
-    increments = list(range(min_num, max_num, 500))
+    increments = list(range(min_num, max_num, 100))
     results = {"rows": {"brute": [], "parallel": []},
                "columns": {"brute": [], "parallel": []}
                }
