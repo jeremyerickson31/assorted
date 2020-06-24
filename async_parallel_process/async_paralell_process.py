@@ -57,12 +57,12 @@ def main():
     mean = 0.0  # standard normal mean
     std_dev = 1.0  # standard normal standard deviation
     min_num = 1000
-    max_num = 2500
+    max_num = 2000
     num_rows = max_num  # number of rows; each row represents 1 standard normal variable
     sim_runs = max_num  # number of columns to have; each column is a simulation run with a random draw
     rands = numpy.random.normal(mean, std_dev, size=(num_rows, sim_runs))
 
-    increments = list(range(min_num, max_num, 500))
+    increments = list(range(min_num, max_num, 100))
     results = {"rows": {"brute": [], "parallel": []},
                "columns": {"brute": [], "parallel": []}
                }
@@ -70,7 +70,7 @@ def main():
     for row_slice in increments:
         # run loop with rows increasing and columns held constant
         print("Running with rows up to " + str(row_slice) + " and all columns")
-        rands_slice = rands[0:row_slice + 1, :]
+        rands_slice = rands[0:row_slice, :]
         print(rands_slice.shape)
         brute_force_avgs, brute_force_time = run_brute_force(rands)
         parallel_avgs, parallel_time = run_parallel(rands_slice)
@@ -80,7 +80,7 @@ def main():
     for col_slice in increments:
         # run loop with rows held constant and columns increasing
         print("Running with columns up to " + str(col_slice) + " and all rows")
-        rands_slice = rands[:, 0:col_slice + 1]
+        rands_slice = rands[:, 0:col_slice]
         print(rands_slice.shape)
         brute_force_avgs, brute_force_time = run_brute_force(rands)
         parallel_avgs, parallel_time = run_parallel(rands_slice)
@@ -90,16 +90,25 @@ def main():
     print(results)
 
     # plotting
-    pyplot.subplot(1, 1, 1)
-    pyplot.plot(increments, results["rows"]["brute"])
-    pyplot.plot(increments, results["rows"]["parallel"])
-    pyplot.plot(increments, results["columns"]["brute"])
-    pyplot.plot(increments, results["columns"]["parallel"])
-    pyplot.grid()
-    pyplot.xlabel("Num of Rows/Columns")
-    pyplot.ylabel("Runtime(s)")
-    pyplot.legend(["more-rows-brute", "more-rows-parallel", "more-cols-brute", "more-cols-parallel"])
-    pyplot.show()
+    fig, (ax1, ax2) = pyplot.subplots(1, 2)
+    ax1.plot(increments, results["rows"]["brute"])
+    ax1.plot(increments, results["rows"]["parallel"])
+    ax1.plot(increments, results["columns"]["brute"])
+    ax1.plot(increments, results["columns"]["parallel"])
+    ax1.grid()
+    #ax1.xlabel("Num of Rows/Columns")
+    #ax1.ylabel("Runtime(s)")
+    #ax1.legend(["more-rows-brute", "more-rows-parallel", "more-cols-brute", "more-cols-parallel"])
+
+    ax2.plot(increments, results["rows"]["brute"])
+    ax2.plot(increments, results["rows"]["parallel"])
+    ax2.plot(increments, results["columns"]["brute"])
+    ax2.plot(increments, results["columns"]["parallel"])
+    ax2.grid()
+    #ax2.xlabel("Num of Rows/Columns")
+    #ax2.ylabel("Runtime(s)")
+    #ax2.legend(["more-rows-brute", "more-rows-parallel", "more-cols-brute", "more-cols-parallel"])
+    fig.show()
 
 """
     print("-------------------")
