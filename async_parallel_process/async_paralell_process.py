@@ -89,26 +89,16 @@ def main():
 
     print(results)
 
-    # plotting
-    fig, (ax1, ax2) = pyplot.subplots(1, 2)
-    ax1.plot(increments, results["rows"]["brute"])
-    ax1.plot(increments, results["rows"]["parallel"])
-    ax1.plot(increments, results["columns"]["brute"])
-    ax1.plot(increments, results["columns"]["parallel"])
-    ax1.grid()
-    #ax1.xlabel("Num of Rows/Columns")
-    #ax1.ylabel("Runtime(s)")
-    #ax1.legend(["more-rows-brute", "more-rows-parallel", "more-cols-brute", "more-cols-parallel"])
-
-    ax2.plot(increments, results["rows"]["brute"])
-    ax2.plot(increments, results["rows"]["parallel"])
-    ax2.plot(increments, results["columns"]["brute"])
-    ax2.plot(increments, results["columns"]["parallel"])
-    ax2.grid()
-    #ax2.xlabel("Num of Rows/Columns")
-    #ax2.ylabel("Runtime(s)")
-    #ax2.legend(["more-rows-brute", "more-rows-parallel", "more-cols-brute", "more-cols-parallel"])
-    fig.show()
+    pyplot.subplot(1, 1, 1)
+    pyplot.plot(increments, results["rows"]["brute"])
+    pyplot.plot(increments, results["rows"]["parallel"])
+    pyplot.plot(increments, results["columns"]["brute"])
+    pyplot.plot(increments, results["columns"]["parallel"])
+    pyplot.grid()
+    pyplot.xlabel("Num of Rows/Columns")
+    pyplot.ylabel("Runtime(s)")
+    pyplot.legend(["more-rows-brute", "more-rows-parallel", "more-cols-brute", "more-cols-parallel"])
+    pyplot.show()
 
 """
     print("-------------------")
