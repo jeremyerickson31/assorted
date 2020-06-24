@@ -57,12 +57,12 @@ def main():
     mean = 0.0  # standard normal mean
     std_dev = 1.0  # standard normal standard deviation
     min_num = 1000
-    max_num = 2000
+    max_num = 5000
     num_rows = max_num  # number of rows; each row represents 1 standard normal variable
     sim_runs = max_num  # number of columns to have; each column is a simulation run with a random draw
     rands = numpy.random.normal(mean, std_dev, size=(num_rows, sim_runs))
 
-    increments = list(range(min_num, max_num, 100))
+    increments = list(range(min_num, max_num, 500))
     results = {"rows": {"brute": [], "parallel": []},
                "columns": {"brute": [], "parallel": []}
                }
@@ -72,7 +72,7 @@ def main():
         print("Running with rows up to " + str(row_slice) + " and all columns")
         rands_slice = rands[0:row_slice, :]
         print(rands_slice.shape)
-        brute_force_avgs, brute_force_time = run_brute_force(rands)
+        brute_force_avgs, brute_force_time = run_brute_force(rands_slice)
         parallel_avgs, parallel_time = run_parallel(rands_slice)
         results["rows"]["brute"].append(brute_force_time.total_seconds())
         results["rows"]["parallel"].append(parallel_time.total_seconds())
@@ -82,7 +82,7 @@ def main():
         print("Running with columns up to " + str(col_slice) + " and all rows")
         rands_slice = rands[:, 0:col_slice]
         print(rands_slice.shape)
-        brute_force_avgs, brute_force_time = run_brute_force(rands)
+        brute_force_avgs, brute_force_time = run_brute_force(rands_slice)
         parallel_avgs, parallel_time = run_parallel(rands_slice)
         results["columns"]["brute"].append(brute_force_time.total_seconds())
         results["columns"]["parallel"].append(parallel_time.total_seconds())
